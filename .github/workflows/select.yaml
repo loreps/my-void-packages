@@ -31,25 +31,10 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Debug
-        run: |
-          echo "=== GITHUB_WORKSPACE: $GITHUB_WORKSPACE ==="
-          echo "=== pwd: $(pwd) ==="
-          echo "=== ls root ==="
-          ls -la
-          echo "=== xbps-src? ==="
-          ls -la xbps-src 2>&1 || echo "NOT FOUND"
-          echo "=== find xbps-src ==="
-          find / -name "xbps-src" -type f 2>/dev/null | head -5
 
       - name: Configure ethereal mode
         run: |
-          chmod +x "$GITHUB_WORKSPACE/xbps-src"
           printf "%s\n" \
-            "XBPS_CHROOT_CMD=ethereal" \
             "XBPS_CHROOT_CMD=ethereal" \
             "XBPS_ALLOW_CHROOT_BREAKOUT=yes" \
             > etc/conf
@@ -59,6 +44,7 @@ jobs:
       - name: Bootstrap
         run: |
           useradd -m -s /bin/sh builder 2>/dev/null || true
+          chmod 755 /__w/my-void-packages
           chmod -R 777 "$GITHUB_WORKSPACE"
           su -s /bin/sh builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && ./xbps-src binary-bootstrap"
 
@@ -85,4 +71,4 @@ jobs:
           cp hostdir/binpkgs/x86_64/*.xbps x86_64/
           git add x86_64/
           git commit -m "packages: build #${{ github.run_number }}"
-          git push -f origin packages   
+          git push -f origin packages
