@@ -1,4 +1,3 @@
-
 name: build-package
 
 on:
@@ -35,6 +34,7 @@ jobs:
 
       - name: Configure ethereal mode
         run: |
+          chmod +x "$GITHUB_WORKSPACE/xbps-src"
           printf "%s\n" \
             "XBPS_CHROOT_CMD=ethereal" \
             "XBPS_ALLOW_CHROOT_BREAKOUT=yes" \
