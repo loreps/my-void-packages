@@ -18,12 +18,9 @@ jobs:
     steps:
       - name: Fix mirror
         run: |
-          rm -rf /etc/xbps.d
-          mkdir -p /etc/xbps.d
-          echo "https://repo.voidlinux.org" > /etc/xbps.d/00-repo-main.conf
-          echo "=== /etc/xbps.d/ ==="
-          ls -la /etc/xbps.d/
-          cat /etc/xbps.d/*
+          sed -i 's|https://alpha.de.repo.voidlinux.org|https://repo.voidlinux.org|g' /usr/share/xbps.d/*.conf
+          echo "=== /usr/share/xbps.d/ ==="
+          cat /usr/share/xbps.d/*.conf
 
       - name: Install deps
         run: xbps-install -Syu ca-certificates libstdc++
