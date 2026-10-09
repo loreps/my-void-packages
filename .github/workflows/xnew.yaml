@@ -16,7 +16,8 @@ jobs:
     steps:
       - name: Install deps for Node.js actions
         run: |
-          xbps-install -Syu --ignore-auth ca-certificates
+          export SSL_NO_VERIFY_PEER=1
+          xbps-install -Syu ca-certificates
           xbps-install -Syu libstdc++
 
       - name: Checkout
