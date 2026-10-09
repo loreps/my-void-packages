@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       pkgname:
-        description: "insert pkg name"
+        description: "pkg name"
         required: true
-        default: "default-xnew-pkgname"
+        default: "defaultpkgname"
 
 jobs:
   generate:
@@ -14,6 +14,9 @@ jobs:
     container: voidlinux/voidlinux:latest
 
     steps:
+      - name: Install libstdc++ (required for Node.js actions)
+        run: xbps-install -Syu libstdc++
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -22,7 +25,6 @@ jobs:
 
       - name: xnew
         run: |
-          ./xbps-src pkg --show="${{ inputs.pkgname }}" 2>/dev/null || true
           xnew ${{ inputs.pkgname }}
           echo "---"
           cat srcpkgs/${{ inputs.pkgname }}/template
