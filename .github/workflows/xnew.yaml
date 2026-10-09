@@ -6,7 +6,7 @@ on:
       pkgname:
         description: "pkg name"
         required: true
-        default: "defaultpkgname"
+        default: "defaultpkg"
 
 jobs:
   generate:
@@ -14,8 +14,10 @@ jobs:
     container: voidlinux/voidlinux:latest
 
     steps:
-      - name: Install libstdc++ (required for Node.js actions)
-        run: xbps-install -Syu libstdc++
+      - name: Install deps for Node.js actions
+        run: |
+          xbps-install -Syu --ignore-auth ca-certificates
+          xbps-install -Syu libstdc++
 
       - name: Checkout
         uses: actions/checkout@v4
