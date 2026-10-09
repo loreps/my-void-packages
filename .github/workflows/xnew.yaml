@@ -25,7 +25,9 @@ jobs:
           cat /usr/share/xbps.d/*.conf
 
       - name: Install deps
-        run: xbps-install -Syu ca-certificates libstdc++
+        run: |
+          xbps-install -u xbps
+          xbps-install -Syu ca-certificates libstdc++
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,4 +45,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: template
-          path: srcpkgs/${{ inputs.pkgname }}/
+          path: srcpkgs/${{ inputs.pkgname }}/   
