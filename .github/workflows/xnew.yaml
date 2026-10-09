@@ -26,7 +26,7 @@ jobs:
 
       - name: Install deps
         run: |
-          xbps-install -u xbps
+          xbps-install -Syu xbps
           xbps-install -Syu ca-certificates libstdc++
 
       - name: Checkout
@@ -45,4 +45,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: template
-          path: srcpkgs/${{ inputs.pkgname }}/   
+          path: srcpkgs/${{ inputs.pkgname }}/
