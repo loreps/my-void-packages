@@ -12,13 +12,15 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     container: voidlinux/voidlinux:latest
+    env:
+      SSL_NO_VERIFY_PEER: "1"
 
     steps:
-      - name: Install deps for Node.js actions
-        run: |
-          export SSL_NO_VERIFY_PEER=1
-          xbps-install -Syu ca-certificates
-          xbps-install -Syu libstdc++
+      - name: Fix mirror
+        run: echo "https://repo.voidlinux.org" > /etc/xbps.d/00-repo-main.conf
+
+      - name: Install deps
+        run: xbps-install -Syu ca-certificates libstdc++
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,4 +38,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: template
-          path: srcpkgs/${{ inputs.pkgname }}/   
+          path: srcpkgs/${{ inputs.pkgname }}/
