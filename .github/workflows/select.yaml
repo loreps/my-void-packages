@@ -31,11 +31,25 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Debug
+        run: |
+          echo "=== GITHUB_WORKSPACE: $GITHUB_WORKSPACE ==="
+          echo "=== pwd: $(pwd) ==="
+          echo "=== ls root ==="
+          ls -la
+          echo "=== xbps-src? ==="
+          ls -la xbps-src 2>&1 || echo "NOT FOUND"
+          echo "=== find xbps-src ==="
+          find / -name "xbps-src" -type f 2>/dev/null | head -5
 
       - name: Configure ethereal mode
         run: |
           chmod +x "$GITHUB_WORKSPACE/xbps-src"
           printf "%s\n" \
+            "XBPS_CHROOT_CMD=ethereal" \
             "XBPS_CHROOT_CMD=ethereal" \
             "XBPS_ALLOW_CHROOT_BREAKOUT=yes" \
             > etc/conf
