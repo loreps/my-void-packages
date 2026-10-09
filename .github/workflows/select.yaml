@@ -1,0 +1,41 @@
+name: build-package
+
+on:
+  workflow_dispatch:
+    inputs:
+      template_path:
+        description: "path to template"
+        required: true
+        default: "srcpkgs/lidm"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: voidlinux/voidlinux:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure ethereal mode
+        run: |
+          printf "%s\n" \
+            "XBPS_CHROOT_CMD=ethereal" \
+            "XBPS_ALLOW_CHROOT_BREAKOUT=yes" \
+            > etc/conf
+          rm -rf masterdir
+          ln -s / masterdir
+
+      - name: Bootstrap
+        run: ./xbps-src binary-bootstrap
+
+      - name: Build
+        run: |
+          PKGNAME=$(basename "${{ inputs.template_path }}")
+          ./xbps-src -A x86_64 pkg "$PKGNAME"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: xbps-packages
+          path: hostdir/binpkgs/x86_64/*.xbps   
