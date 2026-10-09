@@ -1,4 +1,3 @@
-
 name: xnew
 
 on:
@@ -40,7 +39,8 @@ jobs:
         run: |
           useradd -m -s /bin/sh builder
           chmod -R 777 "$GITHUB_WORKSPACE"
-          su builder -c "cd $GITHUB_WORKSPACE && xnew ${{ inputs.pkgname }}"
+          rm -rf "$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}"
+          su -s /bin/sh builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && xnew ${{ inputs.pkgname }}"
           echo "---"
           cat "$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}/template"
 
@@ -48,4 +48,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: template
-          path: srcpkgs/${{ inputs.pkgname }}/
+          path: srcpkgs/${{ inputs.pkgname }}/   
