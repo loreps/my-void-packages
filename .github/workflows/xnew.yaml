@@ -1,3 +1,4 @@
+
 name: xnew
 
 on:
@@ -37,9 +38,11 @@ jobs:
 
       - name: xnew
         run: |
-          xnew ${{ inputs.pkgname }}
+          useradd -m -s /bin/sh builder
+          chmod -R 777 "$GITHUB_WORKSPACE"
+          su builder -c "cd $GITHUB_WORKSPACE && xnew ${{ inputs.pkgname }}"
           echo "---"
-          cat srcpkgs/${{ inputs.pkgname }}/template
+          cat "$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}/template"
 
       - name: Upload template
         uses: actions/upload-artifact@v4
