@@ -1,4 +1,5 @@
-name: select
+
+name: build-package
 
 on:
   workflow_dispatch:
@@ -6,18 +7,28 @@ on:
       template_path:
         description: "template path"
         required: true
-        default: "srcpkgs/defaultpkgpath"
+        default: ""
 
 jobs:
   build:
     runs-on: ubuntu-latest
     container: voidlinux/voidlinux:latest
+    env:
+      SSL_NO_VERIFY_PEER: "1"
 
     steps:
-      - name: Install deps for Node.js actions
+      - name: Fix mirror
         run: |
-          xbps-install -Syu --ignore-auth ca-certificates
-          xbps-install -Syu libstdc++
+          for f in /usr/share/xbps.d/*.conf; do
+            sed -i 's|https://[^/]*repo[^/]*/|https://repo-fastly.voidlinux.org/|g' "$f"
+            sed -i 's|http://[^/]*repo[^/]*/|https://repo-fastly.voidlinux.org/|g' "$f"
+          done
+          cat /usr/share/xbps.d/*.conf
+
+      - name: Install deps
+        run: |
+          xbps-install -Syu xbps
+          xbps-install -Syu ca-certificates libstdc++
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,15 +43,32 @@ jobs:
           ln -s / masterdir
 
       - name: Bootstrap
-        run: ./xbps-src binary-bootstrap
+        run: |
+          useradd -m -s /bin/sh builder 2>/dev/null || true
+          chmod -R 777 "$GITHUB_WORKSPACE"
+          su -s /bin/sh builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && ./xbps-src binary-bootstrap"
 
       - name: Build
         run: |
-          PKGNAME=$(basename "${{ inputs.template_path }}")
-          ./xbps-src -A x86_64 pkg "$PKGNAME"
+          su -s /bin/sh builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && ./xbps-src -A x86_64 pkg $(basename ${{ inputs.template_path }})"
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
         with:
-          name: xbps-packages
-          path: hostdir/binpkgs/x86_64/*.xbps   
+          files: hostdir/binpkgs/x86_64/*.xbps
+          tag_name: "pkg-${{ github.run_number }}"
+          name: "Build #${{ github.run_number }}"
+          draft: false
+          prerelease: true
+
+      - name: Push to packages branch
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git checkout --orphan packages 2>/dev/null || git checkout packages
+          git rm -rf . 2>/dev/null || true
+          mkdir -p x86_64
+          cp hostdir/binpkgs/x86_64/*.xbps x86_64/
+          git add x86_64/
+          git commit -m "packages: build #${{ github.run_number }}"
+          git push -f origin packages   
