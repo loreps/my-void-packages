@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       template_path:
-        description: "path to template"
+        description: "pkg template"
         required: true
-        default: "srcpkgs/lidm"
+        default: ""
 
 jobs:
   build:
@@ -14,6 +14,9 @@ jobs:
     container: voidlinux/voidlinux:latest
 
     steps:
+      - name: Install libstdc++ (required for Node.js actions)
+        run: xbps-install -Syu libstdc++
+
       - name: Checkout
         uses: actions/checkout@v4
 
