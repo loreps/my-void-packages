@@ -1,0 +1,34 @@
+name: xnew
+
+on:
+  workflow_dispatch:
+    inputs:
+      pkgname:
+        description: "insert pkg name"
+        required: true
+        default: "default-xnew-pkgname"
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    container: voidlinux/voidlinux:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install xtools
+        run: xbps-install -Syu xtools
+
+      - name: xnew
+        run: |
+          ./xbps-src pkg --show="${{ inputs.pkgname }}" 2>/dev/null || true
+          xnew ${{ inputs.pkgname }}
+          echo "---"
+          cat srcpkgs/${{ inputs.pkgname }}/template
+
+      - name: Upload template
+        uses: actions/upload-artifact@v4
+        with:
+          name: template
+          path: srcpkgs/${{ inputs.pkgname }}/   
