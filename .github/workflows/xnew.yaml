@@ -18,8 +18,10 @@ jobs:
     steps:
       - name: Fix mirror
         run: |
-          sed -i 's|https://alpha.de.repo.voidlinux.org|https://repo.voidlinux.org|g' /usr/share/xbps.d/*.conf
-          echo "=== /usr/share/xbps.d/ ==="
+          for f in /usr/share/xbps.d/*.conf; do
+            sed -i 's|https://[^/]*repo[^/]*/|https://repo-fastly.voidlinux.org/|g' "$f"
+            sed -i 's|http://[^/]*repo[^/]*/|https://repo-fastly.voidlinux.org/|g' "$f"
+          done
           cat /usr/share/xbps.d/*.conf
 
       - name: Install deps
