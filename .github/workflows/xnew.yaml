@@ -17,7 +17,10 @@ jobs:
 
     steps:
       - name: Fix mirror
-        run: echo "https://repo.voidlinux.org" > /etc/xbps.d/00-repo-main.conf
+        run: |
+          rm -f /etc/xbps.d/*
+          echo "https://repo.voidlinux.org" > /etc/xbps.d/00-repo-main.conf
+          echo "https://repo.voidlinux.org/current/multilib" > /etc/xbps.d/00-repo-multilib.conf
 
       - name: Install deps
         run: xbps-install -Syu ca-certificates libstdc++
