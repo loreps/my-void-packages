@@ -111,9 +111,9 @@ jobs:
         with:
           files: out/*.xbps
           tag_name: "pkg-${{ github.run_number }}"
-          name: "Build #${{ github.run_number }}"
+          name: "(basename ${{ inputs.template_path }}) build"
           draft: false
-          prerelease: true
+          prerelease: false
 
       - name: Push to packages branch
         if: success()
