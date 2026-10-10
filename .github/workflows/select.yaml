@@ -34,7 +34,7 @@ jobs:
         run: |
           set -eux
           xbps-install -Syu -R https://repo-fastly.voidlinux.org/current xbps
-          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git bash base-devel xbps-tools
+          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git bash base-devel
           ldconfig
           ln -sf /usr/bin/bash /bin/sh
 
