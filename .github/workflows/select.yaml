@@ -32,7 +32,7 @@ jobs:
         run: |
           set -eux
           xbps-install -Syu -R https://repo-fastly.voidlinux.org/current xbps
-          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git
+          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git bash base-devel
           ldconfig
 
       - name: Checkout
@@ -53,16 +53,16 @@ jobs:
         shell: sh
         run: |
           set -eux
-          useradd -m -s /bin/sh builder 2>/dev/null || true
+          useradd -m -s /bin/bash builder 2>/dev/null || true
           chmod 755 /__w/my-void-packages
           chmod -R 777 "$GITHUB_WORKSPACE"
-          su -s /bin/sh builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && ./xbps-src binary-bootstrap"
+          su -s /bin/bash builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && ./xbps-src binary-bootstrap"
 
       - name: Build
         shell: sh
         run: |
           set -eux
-          su -s /bin/sh builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && ./xbps-src -A x86_64 pkg $(basename ${{ inputs.template_path }})"
+          su -s /bin/bash builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && ./xbps-src -A x86_64 pkg $(basename ${{ inputs.template_path }})"
 
       - name: Upload to release
         if: always()
