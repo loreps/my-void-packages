@@ -50,19 +50,20 @@ jobs:
           ln -s / masterdir
 
       - name: Bootstrap
-        shell: sh
+        shell: bash
         run: |
           set -eux
-          useradd -m -s /bin/bash builder 2>/dev/null || true
-          chmod 755 /__w/my-void-packages
-          chmod -R 777 "$GITHUB_WORKSPACE"
-          su -s /bin/bash builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && ./xbps-src binary-bootstrap"
+          export HOME=/root
+          cd "$GITHUB_WORKSPACE"
+          ./xbps-src binary-bootstrap
 
       - name: Build
-        shell: sh
+        shell: bash
         run: |
           set -eux
-          su -s /bin/bash builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && ./xbps-src -A x86_64 pkg $(basename ${{ inputs.template_path }})"
+          export HOME=/root
+          cd "$GITHUB_WORKSPACE"
+          ./xbps-src -A x86_64 pkg "$(basename ${{ inputs.template_path }})"
 
       - name: Upload to release
         if: always()
@@ -79,6 +80,7 @@ jobs:
         shell: sh
         run: |
           set -eux
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git checkout --orphan packages 2>/dev/null || git checkout packages
