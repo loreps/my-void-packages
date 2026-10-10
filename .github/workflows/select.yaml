@@ -16,6 +16,9 @@ jobs:
       SSL_NO_VERIFY_PEER: "1"
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Fix mirror
         run: |
           for f in /usr/share/xbps.d/*.conf; do
@@ -28,9 +31,6 @@ jobs:
         run: |
           xbps-install -Syu xbps
           xbps-install -Syu ca-certificates libstdc++
-
-      - name: Checkout
-        uses: actions/checkout@v4
 
       - name: Configure ethereal mode
         run: |
