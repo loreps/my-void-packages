@@ -60,9 +60,23 @@ jobs:
           xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git bash xtools
           ldconfig
           ln -sf /usr/bin/bash /bin/sh
+          # safe.directory a livello di SISTEMA, così vale per ogni utente
+          # (root E builder), non solo per chi lancia il comando
+          git config --system --add safe.directory '*'
 
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Configure ethereal mode
+        shell: sh
+        run: |
+          set -eux
+          printf "%s\n" \
+            "XBPS_CHROOT_CMD=ethereal" \
+            "XBPS_ALLOW_CHROOT_BREAKOUT=yes" \
+            > etc/conf
+          rm -rf masterdir
+          ln -s / masterdir
 
       - name: Generate template skeleton
         shell: bash
@@ -86,6 +100,7 @@ jobs:
         run: |
           set -eux
           TEMPLATE="$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}/template"
+
           escape() { printf '%s' "$1" | sed -e 's/[&/\]/\\&/g'; }
 
           VERSION_ESC=$(escape "${{ inputs.version }}")
@@ -95,8 +110,6 @@ jobs:
           MAINTAINER_ESC=$(escape "${{ inputs.maintainer }}")
           BUILD_STYLE_ESC=$(escape "${{ inputs.build_style }}")
 
-          # distfiles: espando manualmente i placeholder ${pkgname} e ${version}
-          # prima di scriverli nel template, così il valore finale è già corretto
           DISTFILES_RAW="${{ inputs.distfiles }}"
           DISTFILES_RAW="${DISTFILES_RAW//\$\{pkgname\}/${{ inputs.pkgname }}}"
           DISTFILES_RAW="${DISTFILES_RAW//\$\{version\}/${{ inputs.version }}}"
