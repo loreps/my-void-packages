@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container:
       image: voidlinux/voidlinux:latest
       options: --user root
@@ -34,8 +36,6 @@ jobs:
           xbps-install -Syu -R https://repo-fastly.voidlinux.org/current xbps
           xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git bash base-devel
           ldconfig
-          # molti Makefile dei template danno per scontato che /bin/sh sia bash
-          # (es. usano espansioni tipo man{1,5}), dash su Void li rompe
           ln -sf /usr/bin/bash /bin/sh
 
       - name: Checkout
@@ -68,11 +68,22 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           ./xbps-src -A x86_64 pkg "$(basename ${{ inputs.template_path }})"
 
+      - name: Locate built packages
+        shell: bash
+        run: |
+          set -eux
+          echo "=== cercando i .xbps generati ==="
+          find / -xdev -name "*.xbps" -path "*binpkgs*" 2>/dev/null | tee /tmp/found_pkgs.txt
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          while read -r f; do
+            cp "$f" "$GITHUB_WORKSPACE/out/"
+          done < /tmp/found_pkgs.txt
+
       - name: Upload to release
         if: always()
         uses: softprops/action-gh-release@v2
         with:
-          files: hostdir/binpkgs/x86_64/*.xbps
+          files: out/*.xbps
           tag_name: "pkg-${{ github.run_number }}"
           name: "Build #${{ github.run_number }}"
           draft: false
@@ -89,7 +100,7 @@ jobs:
           git checkout --orphan packages 2>/dev/null || git checkout packages
           git rm -rf . 2>/dev/null || true
           mkdir -p x86_64
-          cp hostdir/binpkgs/x86_64/*.xbps x86_64/
+          cp out/*.xbps x86_64/
           git add x86_64/
           git commit -m "packages: build #${{ github.run_number }}"
           git push -f origin packages
