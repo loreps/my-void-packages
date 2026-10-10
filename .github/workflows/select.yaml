@@ -34,6 +34,9 @@ jobs:
           xbps-install -Syu -R https://repo-fastly.voidlinux.org/current xbps
           xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git bash base-devel
           ldconfig
+          # molti Makefile dei template danno per scontato che /bin/sh sia bash
+          # (es. usano espansioni tipo man{1,5}), dash su Void li rompe
+          ln -sf /usr/bin/bash /bin/sh
 
       - name: Checkout
         uses: actions/checkout@v4
