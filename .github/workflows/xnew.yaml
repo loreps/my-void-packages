@@ -6,27 +6,27 @@ on:
       pkgname:
         description: "pkg name"
         required: true
-        default: "defaultpkg"
+        default: ""
       version:
         description: "pkg version"
         required: true
-        default: "99.99.99"
+        default: ""
       homepage:
         description: "pkg homepage"
         required: true
       distfiles:
         description: "URL distfiles"
         required: true
-        default: "nope"
+        default: ""
       short_desc:
         description: "description no dot at the end"
         required: true
       license:
         description: "license"
         required: true
-        default: "MIT"
+        default: ""
       maintainer:
-        description: "name and surname <email>"
+        description: "name surname <email>"
         required: true
         default: "void lore <lorevoidpkg@gmail.com>"
       build_style:
@@ -60,8 +60,6 @@ jobs:
           xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git bash xtools
           ldconfig
           ln -sf /usr/bin/bash /bin/sh
-          # safe.directory a livello di SISTEMA, così vale per ogni utente
-          # (root E builder), non solo per chi lancia il comando
           git config --system --add safe.directory '*'
 
       - name: Checkout
@@ -82,10 +80,11 @@ jobs:
         shell: bash
         run: |
           set -eux
-          useradd -m -s /bin/bash builder 2>/dev/null || true
-          chmod -R 777 "$GITHUB_WORKSPACE"
-          rm -rf "$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}"
-          su -s /bin/bash builder -c "export HOME=/github/home EDITOR=true && cd $GITHUB_WORKSPACE && xnew ${{ inputs.pkgname }}"
+          export HOME=/root
+          export EDITOR=true
+          cd "$GITHUB_WORKSPACE"
+          rm -rf "srcpkgs/${{ inputs.pkgname }}"
+          xnew "${{ inputs.pkgname }}"
 
           TEMPLATE="$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}/template"
           if [ ! -f "$TEMPLATE" ]; then
@@ -132,8 +131,9 @@ jobs:
         shell: bash
         run: |
           set -eux
-          chmod -R 777 "$GITHUB_WORKSPACE"
-          su -s /bin/bash builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && xgensum -i srcpkgs/${{ inputs.pkgname }}/template"
+          export HOME=/root
+          cd "$GITHUB_WORKSPACE"
+          xgensum -i "srcpkgs/${{ inputs.pkgname }}/template"
 
           TEMPLATE="$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}/template"
           echo "=== template finale con checksum reale ==="
