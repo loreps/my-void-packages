@@ -34,7 +34,7 @@ jobs:
         run: |
           set -eux
           xbps-install -Syu -R https://repo-fastly.voidlinux.org/current xbps
-          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git bash base-devel
+          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git bash base-devel xbps-tools
           ldconfig
           ln -sf /usr/bin/bash /bin/sh
 
@@ -138,6 +138,9 @@ jobs:
 
           mkdir -p x86_64
           cp "$GITHUB_WORKSPACE"/out/*.xbps x86_64/
+          
+          xbps-rindex -a x86_64/*.xbps
+          
           git add x86_64/
           git commit -m "packages: build #${{ github.run_number }}"
           git push -f origin packages
