@@ -16,9 +16,6 @@ jobs:
       options: --user root
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Fix mirror
         shell: sh
         run: |
@@ -35,8 +32,11 @@ jobs:
         run: |
           set -eux
           xbps-install -Syu -R https://repo-fastly.voidlinux.org/current xbps
-          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc
+          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git
           ldconfig
+
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Configure ethereal mode
         shell: sh
