@@ -26,9 +26,9 @@ on:
         required: true
         default: "MIT"
       maintainer:
-        description: "Nome Cognome <email>"
+        description: "name and surname <email>"
         required: true
-        default: "void lore <lorevoidpkg@gmail.com>
+        default: "void lore <lorevoidpkg@gmail.com>"
       build_style:
         description: "build_style (gnu-configure, cmake, meson, gnu-makefile, etc...)"
         required: true
@@ -86,8 +86,6 @@ jobs:
         run: |
           set -eux
           TEMPLATE="$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}/template"
-
-          # riempio i campi usando sed, con escaping sicuro per / e &
           escape() { printf '%s' "$1" | sed -e 's/[&/\]/\\&/g'; }
 
           VERSION_ESC=$(escape "${{ inputs.version }}")
@@ -122,8 +120,6 @@ jobs:
         run: |
           set -eux
           chmod -R 777 "$GITHUB_WORKSPACE"
-          # xgensum scarica davvero il distfile e scrive lo sha256 corretto
-          # al posto del placeholder badbad...
           su -s /bin/bash builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && xgensum -i srcpkgs/${{ inputs.pkgname }}/template"
 
           TEMPLATE="$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}/template"
