@@ -75,12 +75,18 @@ jobs:
           echo "=== cercando i .xbps generati ==="
           find / -xdev -name "*.xbps" -path "*binpkgs*" 2>/dev/null | tee /tmp/found_pkgs.txt
           mkdir -p "$GITHUB_WORKSPACE/out"
+          if [ ! -s /tmp/found_pkgs.txt ]; then
+            echo "ERRORE: nessun .xbps trovato, la build non ha prodotto niente. Non procedo oltre."
+            exit 1
+          fi
           while read -r f; do
             cp "$f" "$GITHUB_WORKSPACE/out/"
           done < /tmp/found_pkgs.txt
+          echo "=== pacchetti trovati ==="
+          ls -la "$GITHUB_WORKSPACE/out"
 
       - name: Upload to release
-        if: always()
+        if: success()
         uses: softprops/action-gh-release@v2
         with:
           files: out/*.xbps
@@ -91,16 +97,29 @@ jobs:
 
       - name: Push to packages branch
         if: success()
-        shell: sh
+        shell: bash
         run: |
           set -eux
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git checkout --orphan packages 2>/dev/null || git checkout packages
-          git rm -rf . 2>/dev/null || true
+          git config --global --add safe.directory '*'
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+
+          # lavoro SEMPRE in un clone separato in /tmp, mai nella checkout
+          # principale, così non rischio più di toccare srcpkgs/xbps-src
+          rm -rf /tmp/packages-push
+          REPO_URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+
+          if git clone --depth 1 --branch packages "$REPO_URL" /tmp/packages-push; then
+            cd /tmp/packages-push
+          else
+            git clone --depth 1 "$REPO_URL" /tmp/packages-push
+            cd /tmp/packages-push
+            git checkout --orphan packages
+            git rm -rf . 2>/dev/null || true
+          fi
+
           mkdir -p x86_64
-          cp out/*.xbps x86_64/
+          cp "$GITHUB_WORKSPACE"/out/*.xbps x86_64/
           git add x86_64/
           git commit -m "packages: build #${{ github.run_number }}"
           git push -f origin packages
