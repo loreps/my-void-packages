@@ -72,17 +72,36 @@ jobs:
         shell: bash
         run: |
           set -eux
-          PKG_DIR="$GITHUB_WORKSPACE/hostdir/binpkgs/x86_64"
-          echo "=== contenuto di $PKG_DIR ==="
-          ls -la "$PKG_DIR" || true
-          shopt -s nullglob
-          files=("$PKG_DIR"/*.xbps)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "ERRORE: nessun .xbps trovato in $PKG_DIR, la build non ha prodotto niente"
-            exit 1
-          fi
           mkdir -p "$GITHUB_WORKSPACE/out"
-          cp "${files[@]}" "$GITHUB_WORKSPACE/out/"
+          shopt -s nullglob
+
+          CANDIDATES=(
+            "$GITHUB_WORKSPACE/hostdir/binpkgs/x86_64"
+            "/hostdir/binpkgs/x86_64"
+          )
+
+          FOUND_DIR=""
+          for d in "${CANDIDATES[@]}"; do
+            f=("$d"/*.xbps)
+            if [ ${#f[@]} -gt 0 ]; then
+              FOUND_DIR="$d"
+              break
+            fi
+          done
+
+          if [ -z "$FOUND_DIR" ]; then
+            echo "=== nessuno dei path noti ha pacchetti, provo una ricerca generale ==="
+            FOUND_FILE=$(find / \( -path /proc -o -path /sys \) -prune -o -name "*.xbps" -path "*binpkgs*" -print 2>/dev/null | head -n 20)
+            echo "$FOUND_FILE"
+            if [ -z "$FOUND_FILE" ]; then
+              echo "ERRORE: nessun .xbps trovato da nessuna parte, la build non ha prodotto niente."
+              exit 1
+            fi
+            echo "$FOUND_FILE" | xargs -I{} cp {} "$GITHUB_WORKSPACE/out/"
+          else
+            cp "$FOUND_DIR"/*.xbps "$GITHUB_WORKSPACE/out/"
+          fi
+
           echo "=== pacchetti trovati ==="
           ls -la "$GITHUB_WORKSPACE/out"
 
