@@ -7,17 +7,45 @@ on:
         description: "pkg name"
         required: true
         default: "defaultpkg"
+      version:
+        description: "pkg version"
+        required: true
+        default: "99.99.99"
+      homepage:
+        description: "pkg homepage"
+        required: true
+      distfiles:
+        description: "URL distfiles"
+        required: true
+        default: "nope"
+      short_desc:
+        description: "description no dot at the end"
+        required: true
+      license:
+        description: "license"
+        required: true
+        default: "MIT"
+      maintainer:
+        description: "Nome Cognome <email>"
+        required: true
+        default: "void lore <lorevoidpkg@gmail.com>
+      build_style:
+        description: "build_style (gnu-configure, cmake, meson, gnu-makefile, etc...)"
+        required: true
+        default: "cmake"
 
 jobs:
   generate:
     runs-on: ubuntu-latest
-    container: voidlinux/voidlinux:latest
-    env:
-      SSL_NO_VERIFY_PEER: "1"
+    container:
+      image: voidlinux/voidlinux:latest
+      options: --user root
 
     steps:
       - name: Fix mirror
+        shell: sh
         run: |
+          set -eux
           for f in /usr/share/xbps.d/*.conf; do
             sed -i 's|https://[^/]*repo[^/]*/|https://repo-fastly.voidlinux.org/|g' "$f"
             sed -i 's|http://[^/]*repo[^/]*/|https://repo-fastly.voidlinux.org/|g' "$f"
@@ -25,27 +53,90 @@ jobs:
           cat /usr/share/xbps.d/*.conf
 
       - name: Install deps
+        shell: sh
         run: |
-          xbps-install -Syu xbps
-          xbps-install -Syu ca-certificates libstdc++
+          set -eux
+          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current xbps
+          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc git bash xtools
+          ldconfig
+          ln -sf /usr/bin/bash /bin/sh
 
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install xtools
-        run: xbps-install -Syu xtools
-
-      - name: xnew
+      - name: Generate template skeleton
+        shell: bash
         run: |
-          useradd -m -s /bin/sh builder
+          set -eux
+          useradd -m -s /bin/bash builder 2>/dev/null || true
           chmod -R 777 "$GITHUB_WORKSPACE"
           rm -rf "$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}"
-          su -s /bin/sh builder -c "export HOME=/github/home EDITOR=true && cd $GITHUB_WORKSPACE && xnew ${{ inputs.pkgname }}"
-          echo "---"
-          cat "$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}/template"
+          su -s /bin/bash builder -c "export HOME=/github/home EDITOR=true && cd $GITHUB_WORKSPACE && xnew ${{ inputs.pkgname }}"
+
+          TEMPLATE="$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}/template"
+          if [ ! -f "$TEMPLATE" ]; then
+            echo "ERRORE: xnew non ha creato il template, controlla il nome pacchetto."
+            exit 1
+          fi
+          echo "=== template appena generato ==="
+          cat "$TEMPLATE"
+
+      - name: Fill in template fields
+        shell: bash
+        run: |
+          set -eux
+          TEMPLATE="$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}/template"
+
+          # riempio i campi usando sed, con escaping sicuro per / e &
+          escape() { printf '%s' "$1" | sed -e 's/[&/\]/\\&/g'; }
+
+          VERSION_ESC=$(escape "${{ inputs.version }}")
+          HOMEPAGE_ESC=$(escape "${{ inputs.homepage }}")
+          SHORT_DESC_ESC=$(escape "${{ inputs.short_desc }}")
+          LICENSE_ESC=$(escape "${{ inputs.license }}")
+          MAINTAINER_ESC=$(escape "${{ inputs.maintainer }}")
+          BUILD_STYLE_ESC=$(escape "${{ inputs.build_style }}")
+
+          # distfiles: espando manualmente i placeholder ${pkgname} e ${version}
+          # prima di scriverli nel template, così il valore finale è già corretto
+          DISTFILES_RAW="${{ inputs.distfiles }}"
+          DISTFILES_RAW="${DISTFILES_RAW//\$\{pkgname\}/${{ inputs.pkgname }}}"
+          DISTFILES_RAW="${DISTFILES_RAW//\$\{version\}/${{ inputs.version }}}"
+          DISTFILES_ESC=$(escape "$DISTFILES_RAW")
+
+          sed -i \
+            -e "s/^version=.*/version=${VERSION_ESC}/" \
+            -e "s/^build_style=.*/build_style=${BUILD_STYLE_ESC}/" \
+            -e "s/^short_desc=.*/short_desc=\"${SHORT_DESC_ESC}\"/" \
+            -e "s/^maintainer=.*/maintainer=\"${MAINTAINER_ESC}\"/" \
+            -e "s/^license=.*/license=\"${LICENSE_ESC}\"/" \
+            -e "s/^homepage=.*/homepage=\"${HOMEPAGE_ESC}\"/" \
+            -e "s/^distfiles=.*/distfiles=\"${DISTFILES_ESC}\"/" \
+            "$TEMPLATE"
+
+          echo "=== template dopo il riempimento campi ==="
+          cat "$TEMPLATE"
+
+      - name: Generate real checksum with xgensum
+        shell: bash
+        run: |
+          set -eux
+          chmod -R 777 "$GITHUB_WORKSPACE"
+          # xgensum scarica davvero il distfile e scrive lo sha256 corretto
+          # al posto del placeholder badbad...
+          su -s /bin/bash builder -c "export HOME=/github/home && cd $GITHUB_WORKSPACE && xgensum -i srcpkgs/${{ inputs.pkgname }}/template"
+
+          TEMPLATE="$GITHUB_WORKSPACE/srcpkgs/${{ inputs.pkgname }}/template"
+          echo "=== template finale con checksum reale ==="
+          cat "$TEMPLATE"
+
+          if grep -q '^checksum=badbad' "$TEMPLATE"; then
+            echo "ERRORE: checksum ancora placeholder, xgensum non è riuscito a scaricare il distfile. Controlla l'URL."
+            exit 1
+          fi
 
       - name: Upload template
         uses: actions/upload-artifact@v4
         with:
-          name: template
+          name: ${{ inputs.pkgname }}-template
           path: srcpkgs/${{ inputs.pkgname }}/
