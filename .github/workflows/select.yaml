@@ -15,18 +15,7 @@ jobs:
       image: voidlinux/voidlinux:latest
       options: --user root
 
-    env:
-      SSL_NO_VERIFY_PEER: "1"
-
     steps:
-      - name: Install Node dependencies in container
-        shell: sh
-        run: |
-          set -eux
-          xbps-install -Syu xbps
-          xbps-install -Syu ca-certificates libstdc++ glibc
-          ldconfig
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -40,6 +29,14 @@ jobs:
           done
           echo "=== xbps mirrors ==="
           cat /usr/share/xbps.d/*.conf
+
+      - name: Install Node dependencies in container
+        shell: sh
+        run: |
+          set -eux
+          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current xbps
+          xbps-install -Syu -R https://repo-fastly.voidlinux.org/current ca-certificates libstdc++ glibc
+          ldconfig
 
       - name: Configure ethereal mode
         shell: sh
